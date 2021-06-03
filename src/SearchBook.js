@@ -1,6 +1,7 @@
 import React from "react";
 import * as BooksAPI from "./BooksAPI";
 import { Link } from "react-router-dom";
+import Bookshelf from './Bookshelf';
 
 class SearchBook extends React.Component {
   state = {
@@ -16,7 +17,7 @@ class SearchBook extends React.Component {
     if (searchTerm) {
       BooksAPI.search(searchTerm).then((result) => {
         this.setState(() => ({
-          filteredResults: result.error ? [] : result,
+          filteredResults: result.error ? [] : result.map((searchBook) => this.applyShelf(searchBook))
         }));
       });
     } else {
@@ -26,13 +27,27 @@ class SearchBook extends React.Component {
     }
   };
 
+  applyShelf = (searchBook) => {
+    const { books } = this.props;
+    const existingBook = books.find((b) => b.id === searchBook.id);
+    if (existingBook) {
+        searchBook.shelf = existingBook.shelf;
+    } else {
+        searchBook.shelf = "none";
+    }
+    return searchBook;
+  }
+
   onSearchBookChange = (e, book) => {
     this.props.onBookShelfChange(e, book);
     this.props.onSearchBookAdded(book);
   };
 
+  
+
   render() {
-    const { searchTerm } = this.state;
+    const { searchTerm, filteredResults } = this.state;
+
 
     return (
       <div className="search-books">
@@ -56,50 +71,12 @@ class SearchBook extends React.Component {
         </div>
         <div className="search-books-results">
           <ol className="books-grid">
-            {this.state.filteredResults && (
+            {filteredResults && (
               <div className="bookshelf">
-                <div className="bookshelf-books">
-                  <ol className="books-grid">
-                    {this.state.filteredResults.map((book) => (
-                      <li key={book.id}>
-                        <div className="book">
-                          <div className="book-top">
-                            <div
-                              className="book-cover"
-                              style={{
-                                width: 128,
-                                height: 193,
-                                backgroundImage: `url(${
-                                  book.imageLinks ? book.imageLinks.thumbnail : null
-                                })`
-                              }}
-                            />
-                            <div className="book-shelf-changer">
-                              <select
-                                defaultValue="none"
-                                onChange={(e) =>
-                                  this.onSearchBookChange(e, book)
-                                }
-                              >
-                                <option value="move" disabled>
-                                  Move to...
-                                </option>
-                                <option value="currentlyReading">
-                                  Currently Reading
-                                </option>
-                                <option value="wantToRead">Want to Read</option>
-                                <option value="read">Read</option>
-                                <option value="none">None</option>
-                              </select>
-                            </div>
-                          </div>
-                          <div className="book-title">{book.title}</div>
-                          <div className="book-authors">{book.authors}</div>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+                <Bookshelf 
+                    books={filteredResults}
+                    onBookShelfChange={this.onSearchBookChange}
+                />
               </div>
             )}
           </ol>
